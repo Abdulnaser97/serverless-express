@@ -4,11 +4,11 @@
   "description": "Example application for running a Node Express app on AWS Lambda using Amazon API Gateway.",
   "main": "lambda.js",
   "config": {
-    "s3BucketName": "sls-express-v2-ts",
+    "s3BucketName": "codecanvas-serverless-express-bucket",
     "region": "us-east-1",
-    "cloudFormationStackName": "ServerlessExpressHttpApiStack",
-    "functionName": "",
-    "domain": ""
+    "cloudFormationStackName": "CodeCanvasServerlessStack",
+    "functionName": "CodeCanvasServerlessStack-ExpressLambdaFunction-iqeiyI1Aq18e",
+    "domain": "api-serverless.code-canvas.com"
   },
   "scripts": {
     "build": "tsc",

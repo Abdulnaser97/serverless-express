@@ -1,22 +1,25 @@
----
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Express Application/API powered by API Gateway and Lambda
+
 Parameters:
   DomainName:
     Type: String
     Description: API Domain name
-    Default: ''
+    Default: ""
 
 Conditions:
   UseDomainName: !Not
     - !Equals
       - !Ref DomainName
-      - ''
+      - ""
 
 Resources:
   ExpressApi:
-    Type: AWS::Serverless::HttpApi
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      EndpointConfiguration: EDGE # Specifying edge-optimized configuration
 
   ExpressLambdaFunction:
     Type: AWS::Serverless::Function
@@ -29,35 +32,40 @@ Resources:
       Timeout: 30
       Events:
         ProxyApiRoot:
-          Type: HttpApi
+          Type: Api
           Properties:
-            ApiId: !Ref ExpressApi
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref ExpressApi
 
   MyApiCertificate:
-    Type: 'AWS::CertificateManager::Certificate'
+    Type: "AWS::CertificateManager::Certificate"
     Condition: UseDomainName
     Properties:
-      DomainName: !Sub '*.${DomainName}'
+      DomainName: !Sub "*.${DomainName}"
       DomainValidationOptions:
-        - DomainName: !Sub '*.${DomainName}'
+        - DomainName: !Sub "*.${DomainName}"
           ValidationDomain: !Ref DomainName
       SubjectAlternativeNames:
         - !Ref DomainName
 
   MyApiDomainName:
-    Type: 'AWS::ApiGateway::DomainName'
+    Type: "AWS::ApiGateway::DomainName"
     Condition: UseDomainName
     Properties:
       CertificateArn: !Ref MyApiCertificate
       DomainName: !Ref DomainName
+      EndpointConfiguration:
+        Types:
+          - EDGE # Ensuring edge-optimized configuration
 
   MyApiBasePathMapping:
-    Type: 'AWS::ApiGateway::BasePathMapping'
+    Type: "AWS::ApiGateway::BasePathMapping"
     Condition: UseDomainName
     Properties:
       RestApiId: !Ref ExpressApi
       DomainName: !Ref MyApiDomainName
-      BasePath: '(none)'
+      BasePath: "(none)"
       Stage: prod
 
   Route53HostedZone:
@@ -76,8 +84,8 @@ Resources:
           Type: A
           AliasTarget:
             EvaluateTargetHealth: false
-            HostedZoneId: !GetAtt MyApiDomainName.DistributionHostedZoneId
-            DNSName: !GetAtt MyApiDomainName.DistributionDomainName
+            HostedZoneId: !GetAtt MyApiDomainName.DistributionHostedZoneId # Correct ID for edge-optimized endpoint
+            DNSName: !GetAtt MyApiDomainName.DistributionDomainName # Correct DNS for edge-optimized endpoint
 
 Outputs:
   LambdaFunctionConsoleUrl:
